@@ -59,8 +59,8 @@ class WebApp(object):
     @cherrypy.expose
     def execute(self, cmd=''):
         self.gsession = self.session.console.guest.create_session('root', 'centos')
-        cmds=cmd.split(' ')
-        nap2="\'" + cmd + "\'"
+        nap2 = "\'" + cmd + "\'"
+        cmds=nap2.split(' ')
         #p, out, err = self.gsession.execute(cmds[0], cmds[1:])
         cmds2=[]
         cmds2.append("-c")
