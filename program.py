@@ -68,9 +68,7 @@ class WebApp(object):
             cmds2.append(s)
         p, out, err = self.gsession.execute("/bin/bash", cmds2)
         self.gsession.close()
-        ret="<html><head></head><body><pre>"
-        ret+=str(out)+"</pre></body></html>"
-        return ret
+        return {'out': str(out), 'err': str(err)}
 
     @cherrypy.expose
     def screenshot(self):
@@ -94,5 +92,8 @@ if __name__ == '__main__':
     cherrypy.tools.template = Jinja2Tool()
     conf2 = {'/': {'tools.template.on': True,
                    'tools.template.template': 'views/index.html',
+                   'tools.encode.on': False},
+             '/execute': {'tools.template.on': True,
+                   'tools.template.template': 'views/execute.html',
                    'tools.encode.on': False}}
     cherrypy.quickstart(WebApp(), '', conf2)
