@@ -17,7 +17,7 @@ class WebApp(object):
 
     @cherrypy.expose
     def index(self):
-        return "Witam!"
+        return {'msg': "Witam!"}
 
     @cherrypy.expose
     def secret(self):
@@ -85,4 +85,14 @@ if __name__ == '__main__':
         'server.socket_port': 8081
     }
     cherrypy.config.update(conf)
-    cherrypy.quickstart(WebApp())
+
+    from jinja2 import Environment, FileSystemLoader
+    from plugins.jinja2plugin import Jinja2TemplatePlugin
+    env = Environment(loader=FileSystemLoader('.'))
+    Jinja2TemplatePlugin(cherrypy.engine, env=env).subscribe()
+    from tools.jinja2tool import Jinja2Tool
+    cherrypy.tools.template = Jinja2Tool()
+    conf2 = {'/': {'tools.template.on': True,
+                   'tools.template.template': 'views/index.html',
+                   'tools.encode.on': False}}
+    cherrypy.quickstart(WebApp(), '', conf2)
