@@ -6,14 +6,6 @@ import os
 class WebApp(object):
     def __init__(self):
         self.vbox = virtualbox.VirtualBox()
-        #@type self.session: virtualbox.library.ISession
-        #self.session = None
-        #@type self.machine: virtualbox.library.IMachine
-        #self.machine = None
-        #@type self.progress: virtualbox.library.IProgress
-        #self.progress = None
-        #@type self.gsession: virtualbox.library.IGuestSession
-        #self.gsession = None
 
     @cherrypy.expose
     def index(self):
@@ -65,6 +57,11 @@ class WebApp(object):
             f.write(png)
         return { 'fname': '/static/screenshot.png' }
 
+    @cherrypy.expose
+    def terminal(self):
+        return { 'msg': '' }
+
+
 if __name__ == '__main__':
     conf = {
         'server.socket_port': 8081
@@ -93,6 +90,9 @@ if __name__ == '__main__':
              '/screenshot': {'tools.template.on': True,
                              'tools.template.template': 'views/screenshot.html',
                              'tools.encode.on': False},
+             '/terminal': {'tools.template.on': True,
+                           'tools.template.template': 'views/terminal.html',
+                           'tools.encode.on': False},
              '/start_vm': {'tools.template.on': True,
                            'tools.template.template': 'views/start_vm.html',
                            'tools.encode.on': False}}

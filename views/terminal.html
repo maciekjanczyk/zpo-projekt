@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Terminal</title>
+    <link href="static/terminal-style.css" rel="stylesheet" type="text/css">
+    <script src="static/jquery.js"></script>
+    <script src="static/jquery-terminal.js"></script>
+</head>
+<body>
+{{ msg }}
+<div id="term_demo"></div>
+<br/>
+<script>
+ jQuery(function($, undefined) {
+    $('#term_demo').terminal(function(command, term) {
+        if (command !== '') {
+            try {
+                var result = window.eval(command);
+                if (result !== undefined) {
+                    term.echo(new String(result));
+                }
+            } catch(e) {
+                term.error(new String(e));
+            }
+        } else {
+           term.echo('');
+        }
+    }, {
+        greetings: 'Javascript Interpreter',
+        name: 'js_demo',
+        height: 200,
+        prompt: 'js> '
+    });
+});
+</script>
+</body>
+</html>
