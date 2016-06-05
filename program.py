@@ -1,6 +1,6 @@
 import cherrypy
 import virtualbox
-import vboxapi
+import os
 
 
 class WebApp(object):
@@ -20,17 +20,6 @@ class WebApp(object):
         return {'msg': "Witam!"}
 
     @cherrypy.expose
-    def secret(self):
-        return "Secret!"
-
-    @cherrypy.expose
-    def witaj(self, imie=''):
-        if imie != '':
-            return "Witaj " + imie + "!"
-        else:
-            return "Nie podales imienia!"
-
-    @cherrypy.expose
     def list_vms(self):
         ret = "<b>Machine list:</b><br/><ul>"
         for vm in self.vbox.machines:
@@ -40,25 +29,23 @@ class WebApp(object):
     @cherrypy.expose
     def start_vm(self, machine_name=''):
         if machine_name == '':
-            return "Type machine name!"
-        self.machine = self.vbox.find_machine(machine_name)
-        self.session = virtualbox.Session()
-        self.progress = self.machine.launch_vm_process(self.session, 'gui', '')
-        while not str(self.session.state) == "Locked":
+            return {"status": "Invalid machine name"}
+        cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
+        cherrypy.session['session'] = virtualbox.Session()
+        cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'], 'gui', '')
+        while not str(cherrypy.session['session'].state) == "Locked":
             continue
-        return "Ok."
+        return { "status": "Ok" }
 
     @cherrypy.expose
     def state(self):
-        ret = ''
-        ret += str(self.machine.name) + "<br/>"
-        ret += "Cpu status: " + str(self.machine.get_cpu_status(0)) + "<br/>"
-        ret += "State: " + str(self.session.state) + "<br/>"
-        return ret
+        machine = cherrypy.session['machine']
+        session = cherrypy.session['session']
+        return { "name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state) }
 
     @cherrypy.expose
     def execute(self, cmd=''):
-        self.gsession = self.session.console.guest.create_session('root', 'centos')
+        gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
         nap2 = "\'" + cmd + "\'"
         cmds=nap2.split(' ')
         #p, out, err = self.gsession.execute(cmds[0], cmds[1:])
@@ -66,17 +53,17 @@ class WebApp(object):
         cmds2.append("-c")
         for s in cmds:
             cmds2.append(s)
-        p, out, err = self.gsession.execute("/bin/bash", cmds2)
-        self.gsession.close()
+        p, out, err = gsession.execute("/bin/bash", cmds2)
+        gsession.close()
         return {'out': str(out), 'err': str(err)}
 
     @cherrypy.expose
     def screenshot(self):
-        h, w, _, _, _, _ = self.session.console.display.get_screen_resolution(0)
-        png = self.session.console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.p)
-        with open('screenshot.jpg', 'wb') as f:
+        h, w, _, _, _, _ = cherrypy.session['session'].console.display.get_screen_resolution(0)
+        png = cherrypy.session['session'].console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.png)
+        with open('./public/screenshot.png', 'wb') as f:
             f.write(png)
-        return '<html><body><img src="screenshot.jpg"></body></html>'
+        return { 'fname': '/static/screenshot.png' }
 
 if __name__ == '__main__':
     conf = {
@@ -91,9 +78,22 @@ if __name__ == '__main__':
     from tools.jinja2tool import Jinja2Tool
     cherrypy.tools.template = Jinja2Tool()
     conf2 = {'/': {'tools.template.on': True,
+                   'tools.sessions.on': True,
+                   'tools.staticdir.root': os.path.abspath(os.getcwd()),
                    'tools.template.template': 'views/index.html',
                    'tools.encode.on': False},
+             '/static': {'tools.staticdir.on': True,
+                         'tools.staticdir.dir': './public'},
              '/execute': {'tools.template.on': True,
-                   'tools.template.template': 'views/execute.html',
-                   'tools.encode.on': False}}
+                          'tools.template.template': 'views/execute.html',
+                          'tools.encode.on': False},
+             '/state': {'tools.template.on': True,
+                        'tools.template.template': 'views/state.html',
+                        'tools.encode.on': False},
+             '/screenshot': {'tools.template.on': True,
+                             'tools.template.template': 'views/screenshot.html',
+                             'tools.encode.on': False},
+             '/start_vm': {'tools.template.on': True,
+                           'tools.template.template': 'views/start_vm.html',
+                           'tools.encode.on': False}}
     cherrypy.quickstart(WebApp(), '', conf2)
