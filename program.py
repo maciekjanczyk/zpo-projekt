@@ -6,6 +6,15 @@ import os
 class WebApp(object):
     def __init__(self):
         self.vbox = virtualbox.VirtualBox()
+        self.api = RestAPI()
+
+    def _cp_dispatch(self, vpath):
+        if len(vpath) == 1:
+            return self
+        elif vpath[1] == 'api':
+            return self.api
+        else:
+            return vpath
 
     @cherrypy.expose
     def index(self):
@@ -38,13 +47,9 @@ class WebApp(object):
     @cherrypy.expose
     def execute(self, cmd=''):
         gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
-        nap2 = "\'" + cmd + "\'"
-        cmds=nap2.split(' ')
-        #p, out, err = self.gsession.execute(cmds[0], cmds[1:])
         cmds2=[]
         cmds2.append("-c")
-        for s in cmds:
-            cmds2.append(s)
+        cmds2.append(cmd)
         p, out, err = gsession.execute("/bin/bash", cmds2)
         gsession.close()
         return {'out': str(out), 'err': str(err)}
@@ -60,6 +65,16 @@ class WebApp(object):
     @cherrypy.expose
     def terminal(self):
         return { 'msg': '' }
+
+
+class RestAPI(object):
+    @cherrypy.expose
+    def index(self):
+        return "API"
+
+    @cherrypy.expose
+    def cmd(self):
+        return "API"
 
 
 if __name__ == '__main__':
