@@ -28,6 +28,14 @@ class WebApp(object):
         return ret + "</ul>"
 
     @cherrypy.expose
+    def new_machine(self, distribution, name):
+        new_machine = self.vbox.create_machine('', name, [], "Linux", '')
+        src_machine = self.vbox.find_machine(distribution)
+        src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
+        self.vbox.register_machine(new_machine)
+        return "Ok."
+
+    @cherrypy.expose
     def start_vm(self, machine_name=''):
         if machine_name == '':
             return {"status": "Invalid machine name"}
