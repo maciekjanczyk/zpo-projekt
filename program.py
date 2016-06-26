@@ -1,6 +1,7 @@
 import cherrypy
 import virtualbox
 import os
+import json
 
 
 class WebApp(object):
@@ -83,6 +84,10 @@ class RestAPI(object):
     @cherrypy.expose
     def cmd(self):
         return "API"
+
+    @cherrypy.expose
+    def json(self):
+        return json.dumps({ "pole1": "ok", "pole2": "ok2" })
 
 
 if __name__ == '__main__':
