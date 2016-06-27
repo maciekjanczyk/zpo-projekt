@@ -2,11 +2,15 @@ import cherrypy
 import virtualbox
 import os
 import json
+import sqlite3
+import hashlib
 
+hashadd = "HAAASH"
 
 class WebApp(object):
     def __init__(self):
         self.api = RestAPI()
+        self.dbconnection = sqlite3.connect('./db/db.sqlite3', check_same_thread=False)
 
     def _cp_dispatch(self, vpath):
         if len(vpath) == 1:
@@ -19,6 +23,45 @@ class WebApp(object):
     @cherrypy.expose
     def index(self):
         return {'msg': "Witam!"}
+
+    @cherrypy.expose
+    def new_user(self, name, passwd):
+        cursor = self.dbconnection.execute("SELECT login FROM Users")
+        for row in cursor:
+            if row[0] == name:
+                return "Uzytkownik istnieje!"
+        hash = hashlib.md5(hashadd + passwd).hexdigest()
+        self.dbconnection.execute("INSERT INTO Users VALUES (\'{0}\', \'{1}\')".format(name, hash))
+        self.dbconnection.commit()
+        return "Ok!"
+
+    @cherrypy.expose
+    def login(self, name, passwd):
+        try:
+            if cherrypy.session['logged']:
+                return "Zalogowano."
+        except KeyError:
+            None
+        cursor = self.dbconnection.execute("SELECT * FROM Users")
+        userExists = False
+        dbpass = ""
+        for row in cursor:
+            if row[0] == name:
+                userExists = True
+                dbpass = row[1]
+                break
+        if not userExists:
+            return "Nie ma takiego uzytkownika w bazie danych!"
+        hash = hashlib.md5(hashadd + passwd).hexdigest()
+        if hash != dbpass:
+            return "Nieprawidlowe haslo!"
+        cherrypy.session['logged'] = True
+        return "Zalogowano."
+
+    @cherrypy.expose
+    def logout(self):
+        cherrypy.session['logged'] = False
+        return "Wylogowano."
 
     @cherrypy.expose
     def list_vms(self):
