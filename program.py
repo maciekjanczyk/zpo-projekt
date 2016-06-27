@@ -131,6 +131,19 @@ class RestAPI(object):
             return json.dumps({'state': 'Failure.'})
         return json.dumps({'state': 'Ok.'})
 
+    @cherrypy.expose
+    def delete_machine(self, name):
+        machine = None
+        for m in self.vbox.machines:
+            if m.name == name:
+                machine = m
+                break
+        try:
+            machine.remove(True)
+        except Exception:
+            return json.dumps({'state': 'Failure.'})
+        return json.dumps({'state': 'Ok.'})
+
 
 if __name__ == '__main__':
     conf = {
