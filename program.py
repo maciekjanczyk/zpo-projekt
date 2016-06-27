@@ -6,7 +6,6 @@ import json
 
 class WebApp(object):
     def __init__(self):
-        self.vbox = virtualbox.VirtualBox()
         self.api = RestAPI()
 
     def _cp_dispatch(self, vpath):
@@ -23,52 +22,26 @@ class WebApp(object):
 
     @cherrypy.expose
     def list_vms(self):
-        ret = "<b>Machine list:</b><br/><ul>"
-        for vm in self.vbox.machines:
-            ret += "<li>" + vm.name + "</li>"
-        return ret + "</ul>"
+        return "WSTAW TU"
 
     @cherrypy.expose
     def new_machine(self, distribution, name):
-        new_machine = self.vbox.create_machine('', name, [], "Linux", '')
-        src_machine = self.vbox.find_machine(distribution)
-        src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
-        self.vbox.register_machine(new_machine)
         return "Ok."
 
     @cherrypy.expose
     def start_vm(self, machine_name=''):
-        if machine_name == '':
-            return {"status": "Invalid machine name"}
-        cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
-        cherrypy.session['session'] = virtualbox.Session()
-        cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'], 'gui', '')
-        while not str(cherrypy.session['session'].state) == "Locked":
-            continue
         return { "status": "Ok" }
 
     @cherrypy.expose
     def state(self):
-        machine = cherrypy.session['machine']
-        session = cherrypy.session['session']
-        return { "name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state) }
+        return { "name": "ssss", "cpu": "cccc", "state": "ssss" }
 
     @cherrypy.expose
     def execute(self, cmd=''):
-        gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
-        cmds2=[]
-        cmds2.append("-c")
-        cmds2.append(cmd)
-        p, out, err = gsession.execute("/bin/bash", cmds2)
-        gsession.close()
-        return {'out': str(out), 'err': str(err)}
+        return "EEEE"
 
     @cherrypy.expose
     def screenshot(self):
-        h, w, _, _, _, _ = cherrypy.session['session'].console.display.get_screen_resolution(0)
-        png = cherrypy.session['session'].console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.png)
-        with open('./public/screenshot.png', 'wb') as f:
-            f.write(png)
         return { 'fname': '/static/screenshot.png' }
 
     @cherrypy.expose
@@ -77,17 +50,86 @@ class WebApp(object):
 
 
 class RestAPI(object):
+    def __init__(self):
+        self.vbox = virtualbox.VirtualBox()
+
     @cherrypy.expose
     def index(self):
         return "API"
 
     @cherrypy.expose
-    def cmd(self):
-        return "API"
+    def json_test(self):
+        return json.dumps({ "pole1": "ok", "pole2": "ok2" })
 
     @cherrypy.expose
-    def json(self):
-        return json.dumps({ "pole1": "ok", "pole2": "ok2" })
+    def start_vm(self, machine_name=''):
+        if machine_name == '':
+            return json.dumps({"status": "Invalid machine name"})
+        try:
+            cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
+            cherrypy.session['session'] = virtualbox.Session()
+            cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'], 'gui', '')
+            while not str(cherrypy.session['session'].state) == "Locked":
+                continue
+        except Exception:
+            return json.dumps({"status": "Failure"})
+        return json.dumps({"status": "Ok"})
+
+    @cherrypy.expose
+    def screenshot(self):
+        h, w, _, _, _, _ = cherrypy.session['session'].console.display.get_screen_resolution(0)
+        png = cherrypy.session['session'].console.display.take_screen_shot_to_array(0, h, w,
+                                                                                    virtualbox.library.BitmapFormat.png)
+        with open('./public/screenshot.png', 'wb') as f:
+            f.write(png)
+        return json.dumps({'furl': '/static/screenshot.png'})
+
+    @cherrypy.expose
+    def execute(self, cmd=''):
+        gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
+        cmds2 = []
+        cmds2.append("-c")
+        cmds2.append(cmd)
+        p, out, err = gsession.execute("/bin/bash", cmds2)
+        gsession.close()
+        return json.dumps({'out': str(out), 'err': str(err)})
+
+    @cherrypy.expose
+    def list_vms(self):
+        ret = ""
+        for vm in self.vbox.machines:
+            ret += vm.name + ";"
+        return json.dumps({'list': ret})
+
+    @cherrypy.expose
+    def state(self):
+        machine = cherrypy.session['machine']
+        session = cherrypy.session['session']
+        return {"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)}
+
+    @cherrypy.expose
+    def new_machine(self, distribution, name):
+        try:
+            new_machine = self.vbox.create_machine('', name, [], "Linux", '')
+            src_machine = self.vbox.find_machine(distribution)
+            src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
+            self.vbox.register_machine(new_machine)
+        except Exception:
+            return json.dumps({'state': 'Failure.'})
+        return json.dumps({'state': 'Ok.'})
+
+    @cherrypy.expose
+    def shutdown_vm(self, name):
+        sess = None
+        try:
+            sess = cherrypy.session['session']
+        except Exception:
+            return json.dumps({'state': 'Failure.'})
+        try:
+            sess.console.power_down()
+        except virtualbox.library.VBoxErrorInvalidVmState:
+            return json.dumps({'state': 'Failure.'})
+        return json.dumps({'state': 'Ok.'})
 
 
 if __name__ == '__main__':
