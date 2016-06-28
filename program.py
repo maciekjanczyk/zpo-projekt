@@ -236,8 +236,7 @@ class RestAPI(object):
         except KeyError:
             return json.dumps({'status': 'You are not logged in.'})
         try:
-            group_name = ['/' + cherrypy.session['logged']]
-            new_machine = self.vbox.create_machine(settings_file='', name=name, groups=group_name, os_type_id="Linux",
+            new_machine = self.vbox.create_machine(settings_file='', name=name, groups=[], os_type_id="Linux",
                                                    flags='')
             src_machine = self.vbox.find_machine(distribution)
             src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
@@ -247,6 +246,8 @@ class RestAPI(object):
             a = call(ch_gr_cmd, shell=True)
         except Exception:
             return json.dumps({'state': 'Failure.'})
+        except cherrypy.TimeoutError:
+            None
         return json.dumps({'state': 'Ok.'})
 
     @cherrypy.expose
@@ -281,6 +282,27 @@ class RestAPI(object):
                 break
         try:
             machine.remove(True)
+        except Exception:
+            return json.dumps({'state': 'Failure.'})
+        return json.dumps({'state': 'Ok.'})
+
+    @cherrypy.expose
+    def rename_machine(self, old_name, new_name):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            return json.dumps({'status': 'You are not logged in.'})
+        machine = None
+        for m in self.vbox.machines:
+            if m.name == old_name and ('/' + cherrypy.session['logged']) in m.groups:
+                machine = m
+                break
+        try:
+            session = machine.create_session()
+            session.machine.name = new_name
+            session.machine.save_settings()
+            session.unlock_machine()
         except Exception:
             return json.dumps({'state': 'Failure.'})
         return json.dumps({'state': 'Ok.'})
