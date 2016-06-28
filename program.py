@@ -57,6 +57,7 @@ class RestAPI(object):
     def __init__(self):
         self.vbox = virtualbox.VirtualBox()
         self.dbconnection = sqlite3.connect('./db/db.sqlite3', check_same_thread=False)
+        self.machines = {}
 
     @cherrypy.expose
     def new_user(self, name, passwd):
@@ -107,45 +108,81 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
+            return json.dumps({'status': 'You are not logged in.'})
         if machine_name == '':
             return json.dumps({"status": "Invalid machine name"})
         try:
-            cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
-            cherrypy.session['session'] = virtualbox.Session()
-            cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'],
-                                                                                         'gui', '')
-            while not str(cherrypy.session['session'].state) == "Locked":
+            mach_tmp = self.machines[cherrypy.session['logged']]
+        except KeyError:
+            self.machines[cherrypy.session['logged']] = []
+        try:
+            # cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
+            machine = self.vbox.find_machine(machine_name)
+            # cherrypy.session['session'] = virtualbox.Session()
+            session = virtualbox.Session()
+            self.machines[cherrypy.session['logged']].append({'machine': machine, 'session': session})
+            cherrypy.session['progress'] = machine.launch_vm_process(session, 'gui', '')
+            while not str(session.state) == "Locked":
                 continue
         except Exception:
             return json.dumps({"status": "Failure"})
         return json.dumps({"status": "Ok"})
 
+    def return_machine_by_name(self, login, name):
+        try:
+            for kv in self.machines[login]:
+                if kv['machine'].name == name:
+                    return kv['machine']
+            return None
+        except KeyError:
+            return None
+
+    def return_session_by_name(self, login, name):
+        try:
+            for kv in self.machines[login]:
+                if kv['machine'].name == name:
+                    return kv['session']
+            return None
+        except KeyError:
+            return None
+
+    def return_mach_sess_by_name(self, login, name):
+        try:
+            for kv in self.machines[login]:
+                if kv['machine'].name == name:
+                    return kv
+            return None
+        except KeyError:
+            return None
+
     @cherrypy.expose
-    def screenshot(self):
+    def screenshot(self, name):
         try:
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
-        h, w, _, _, _, _ = cherrypy.session['session'].console.display.get_screen_resolution(0)
-        png = cherrypy.session['session'].console.display.take_screen_shot_to_array(0, h, w,
-                                                                                    virtualbox.library.BitmapFormat.png)
+            return json.dumps({'status': 'You are not logged in.'})
+        sess = self.return_session_by_name(cherrypy.session['logged'], name)
+        if sess == None:
+            return json.dumps({'furl': '', 'status': 'Failure - invalid machine name.'})
+        h, w, _, _, _, _ = sess.console.display.get_screen_resolution(0)
+        png = sess.console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.png)
         with open('./public/screenshot.png', 'wb') as f:
             f.write(png)
         return json.dumps({'furl': '/static/screenshot.png'})
 
     @cherrypy.expose
-    def execute(self, cmd=''):
+    def execute(self, name, cmd=''):
         try:
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
-        gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
-        cmds2 = []
-        cmds2.append("-c")
-        cmds2.append(cmd)
+            return json.dumps({'status': 'You are not logged in.'})
+        sess = self.return_session_by_name(cherrypy.session['logged'], name)
+        if sess == None:
+            return json.dumps({'out': '', 'err': '', 'status': 'Failure - invalid machine name.'})
+        gsession = sess.console.guest.create_session('root', 'centos')
+        cmds2 = ["-c", cmd]
         p, out, err = gsession.execute("/bin/bash", cmds2)
         gsession.close()
         return json.dumps({'out': str(out), 'err': str(err)})
@@ -156,10 +193,25 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
+            return json.dumps({'status': 'You are not logged in.'})
         ret = ""
         for vm in self.vbox.machines:
             ret += vm.name + ";"
+        return json.dumps({'list': ret})
+
+    @cherrypy.expose
+    def list_working_vms(self):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            return json.dumps({'status': 'You are not logged in.'})
+        ret = ""
+        try:
+            for kv in self.machines[cherrypy.session['logged']]:
+                ret += kv['machine'].name + ";"
+        except KeyError:
+            None
         return json.dumps({'list': ret})
 
     @cherrypy.expose
@@ -168,7 +220,7 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
+            return json.dumps({'status': 'You are not logged in.'})
         machine = cherrypy.session['machine']
         session = cherrypy.session['session']
         return {"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)}
@@ -179,7 +231,7 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
+            return json.dumps({'status': 'You are not logged in.'})
         try:
             new_machine = self.vbox.create_machine('', name, [], "Linux", '')
             src_machine = self.vbox.find_machine(distribution)
@@ -195,16 +247,16 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
-        sess = None
-        try:
-            sess = cherrypy.session['session']
-        except Exception:
+            return json.dumps({'status': 'You are not logged in.'})
+        kv = self.return_mach_sess_by_name(cherrypy.session['logged'], name)
+        if kv == None:
             return json.dumps({'state': 'Failure.'})
+        sess = kv['session']
         try:
             sess.console.power_down()
         except virtualbox.library.VBoxErrorInvalidVmState:
             return json.dumps({'state': 'Failure.'})
+        self.machines[cherrypy.session['logged']].remove(kv)
         return json.dumps({'state': 'Ok.'})
 
     @cherrypy.expose
@@ -213,7 +265,7 @@ class RestAPI(object):
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
-            None
+            return json.dumps({'status': 'You are not logged in.'})
         machine = None
         for m in self.vbox.machines:
             if m.name == name:
