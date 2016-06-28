@@ -278,10 +278,10 @@ class RestAPI(object):
                          '/' + cherrypy.session['logged']]
             a = call(ch_gr_cmd, shell=True)
         except Exception:
-            return json.dumps({'state': 'Failure.'})
+            return json.dumps({'status': 'Failure.'})
         except cherrypy.TimeoutError:
             None
-        return json.dumps({'state': 'Ok.'})
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def shutdown_vm(self, name):
@@ -292,14 +292,14 @@ class RestAPI(object):
             return json.dumps({'status': 'You are not logged in.'})
         kv = self.return_mach_sess_by_name(cherrypy.session['logged'], name)
         if kv == None:
-            return json.dumps({'state': 'Failure.'})
+            return json.dumps({'status': 'Failure.'})
         sess = kv['session']
         try:
             sess.console.power_down()
         except virtualbox.library.VBoxErrorInvalidVmState:
-            return json.dumps({'state': 'Failure.'})
+            return json.dumps({'status': 'Failure.'})
         self.machines[cherrypy.session['logged']].remove(kv)
-        return json.dumps({'state': 'Ok.'})
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def delete_machine(self, name):
@@ -316,8 +316,8 @@ class RestAPI(object):
         try:
             machine.remove(True)
         except Exception:
-            return json.dumps({'state': 'Failure.'})
-        return json.dumps({'state': 'Ok.'})
+            return json.dumps({'status': 'Failure.'})
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def rename_machine(self, old_name, new_name):
@@ -337,8 +337,16 @@ class RestAPI(object):
             session.machine.save_settings()
             session.unlock_machine()
         except Exception:
-            return json.dumps({'state': 'Failure.'})
-        return json.dumps({'state': 'Ok.'})
+            return json.dumps({'status': 'Failure.'})
+        return json.dumps({'status': 'Ok.'})
+
+    @cherrypy.expose
+    def av_distros(self):
+        machs = self.vbox.get_machines_by_groups(['/distros'])
+        ret = ""
+        for m in machs:
+            ret += m.name + ";"
+        return json.dumps({'list': ret})
 
 
 if __name__ == '__main__':

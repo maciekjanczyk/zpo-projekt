@@ -60,6 +60,103 @@ new Ajax.Request('/api/list_working_vms', {
   }
 });
 }
+
+function new_machine() {
+new Ajax.Request('/api/av_distros', {
+  method:'get',
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "list") {
+            document.getElementById("nazwa_kategorii").innerHTML = "Dodaj nowa maszyne";
+            document.getElementById("cialo_kategorii").innerHTML = "<p>Wybierz jedna z dostepnych dystrybucji:</p>";
+            arr = v.split(";");
+            lista = "<select id=\"distro\">";
+            for(var i=0;i<arr.length;i++) {
+                if (arr[i] === "")
+                    break;
+                lista += "<option>" + arr[i] + "</option>";
+            }
+            lista += "</select>";
+            document.getElementById("cialo_kategorii").innerHTML += lista;
+            document.getElementById("cialo_kategorii").innerHTML += "<p></p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<p>Wpisz nazwe maszyny:</p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<input id=\"mach_name\"/><br/>";
+            document.getElementById("cialo_kategorii").innerHTML += "<p></p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<input onclick=\"nowa_maszyna()\" type=\"button\" value=\"Stworz\"/><br/>";
+        }
+    });
+  }
+});
+}
+
+function nowa_maszyna () {
+var e = document.getElementById("distro");
+var distro = e.options[e.selectedIndex].text;
+var nazwa = document.getElementById("mach_name").value;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status - nowa maszyna";
+var ptrwa = "Proces trwa (czas oczekiwania ok 10 minut!)...";
+document.getElementById("cialo_kategorii2").innerHTML = "Proces trwa (czas oczekiwania ok 10 minut!)...";
+new Ajax.Request('/api/new_machine', {
+  method: 'get',
+  parameters: {distribution: distro, name: nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+        }
+        else if (document.getElementById("cialo_kategorii2").innerHTML === ptrwa) {
+            document.getElementById("cialo_kategorii2").innerHTML = "Ok. Sprawdz menu \"Twoje maszyny\"";
+        }
+    });
+  }
+});
+}
+
+function del_machine() {
+new Ajax.Request('/api/list_vms', {
+  method:'get',
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "list") {
+            document.getElementById("nazwa_kategorii").innerHTML = "Usun maszyne";
+            document.getElementById("cialo_kategorii").innerHTML = "<p>Wybierz maszyne do usuniecia:</p>";
+            arr = v.split(";");
+            lista = "<select id=\"del_mach\">";
+            for(var i=0;i<arr.length;i++) {
+                if (arr[i] === "")
+                    break;
+                lista += "<option>" + arr[i] + "</option>";
+            }
+            lista += "</select>";
+            document.getElementById("cialo_kategorii").innerHTML += lista;
+            document.getElementById("cialo_kategorii").innerHTML += "<p></p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<input onclick=\"usun_maszyne()\" type=\"button\" value=\"Usun\"/><br/>";
+        }
+    });
+  }
+});
+}
+
+function usun_maszyne () {
+var e = document.getElementById("del_mach");
+var nazwa = e.options[e.selectedIndex].text;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status - usuniecie maszyny";
+document.getElementById("cialo_kategorii2").innerHTML = "Proces trwa...";
+new Ajax.Request('/api/delete_machine', {
+  method: 'get',
+  parameters: {name: nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+        }
+        else if (document.getElementById("cialo_kategorii2").innerHTML === ptrwa) {
+            document.getElementById("cialo_kategorii2").innerHTML = "Ok. Sprawdz menu \"Twoje maszyny\"";
+        }
+    });
+  }
+});
+}
 </script>
 
 <div class="container">
@@ -72,8 +169,8 @@ new Ajax.Request('/api/list_working_vms', {
       <h3>Menu</h3>
       <a href="#" onclick="my_machines()"><p>Twoje maszyny</p></a>
       <a href="#" onclick="working_machines()"><p>Pracujace maszyny</p></a>
-      <p>Dodaj nowa maszyne</p>
-      <p>Usun maszyne</p>
+      <a href="#" onclick="new_machine()"><p>Dodaj nowa maszyne</p></a>
+      <a href="#" onclick="del_machine()"><p>Usun maszyne</p></a>
       <a href="" onclick="logout()"><p>Wyloguj</p></a>
     </div>
     <div class="col-sm-4">
