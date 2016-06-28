@@ -4,6 +4,8 @@ import os
 import json
 import sqlite3
 import hashlib
+from subprocess import call
+
 
 hashadd = "HAAASH"
 
@@ -116,9 +118,7 @@ class RestAPI(object):
         except KeyError:
             self.machines[cherrypy.session['logged']] = []
         try:
-            # cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
             machine = self.vbox.find_machine(machine_name)
-            # cherrypy.session['session'] = virtualbox.Session()
             session = virtualbox.Session()
             self.machines[cherrypy.session['logged']].append({'machine': machine, 'session': session})
             cherrypy.session['progress'] = machine.launch_vm_process(session, 'gui', '')
@@ -233,10 +233,15 @@ class RestAPI(object):
         except KeyError:
             return json.dumps({'status': 'You are not logged in.'})
         try:
-            new_machine = self.vbox.create_machine('', name, [], "Linux", '')
+            group_name = ['/' + cherrypy.session['logged']]
+            new_machine = self.vbox.create_machine(settings_file='', name=name, groups=group_name, os_type_id="Linux",
+                                                   flags='')
             src_machine = self.vbox.find_machine(distribution)
             src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
             self.vbox.register_machine(new_machine)
+            ch_gr_cmd = ["C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe", "modifyvm", name, "--groups",
+                         '/' + cherrypy.session['logged']]
+            a = call(ch_gr_cmd, shell=True)
         except Exception:
             return json.dumps({'state': 'Failure.'})
         return json.dumps({'state': 'Ok.'})
