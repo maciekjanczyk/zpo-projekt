@@ -7,10 +7,10 @@ import hashlib
 
 hashadd = "HAAASH"
 
+
 class WebApp(object):
     def __init__(self):
         self.api = RestAPI()
-        self.dbconnection = sqlite3.connect('./db/db.sqlite3', check_same_thread=False)
 
     def _cp_dispatch(self, vpath):
         if len(vpath) == 1:
@@ -25,21 +25,55 @@ class WebApp(object):
         return {'msg': "Witam!"}
 
     @cherrypy.expose
+    def list_vms(self):
+        return "WSTAW TU"
+
+    @cherrypy.expose
+    def new_machine(self, distribution, name):
+        return "Ok."
+
+    @cherrypy.expose
+    def start_vm(self, machine_name=''):
+        return {"status": "Ok"}
+
+    @cherrypy.expose
+    def state(self):
+        return {"name": "ssss", "cpu": "cccc", "state": "ssss"}
+
+    @cherrypy.expose
+    def execute(self, cmd=''):
+        return "EEEE"
+
+    @cherrypy.expose
+    def screenshot(self):
+        return {'fname': '/static/screenshot.png'}
+
+    @cherrypy.expose
+    def terminal(self):
+        return {'msg': ''}
+
+
+class RestAPI(object):
+    def __init__(self):
+        self.vbox = virtualbox.VirtualBox()
+        self.dbconnection = sqlite3.connect('./db/db.sqlite3', check_same_thread=False)
+
+    @cherrypy.expose
     def new_user(self, name, passwd):
         cursor = self.dbconnection.execute("SELECT login FROM Users")
         for row in cursor:
             if row[0] == name:
-                return "Uzytkownik istnieje!"
+                return json.dumps({'status': 'Failed - user exists in DB.'})
         hash = hashlib.md5(hashadd + passwd).hexdigest()
         self.dbconnection.execute("INSERT INTO Users VALUES (\'{0}\', \'{1}\')".format(name, hash))
         self.dbconnection.commit()
-        return "Ok!"
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def login(self, name, passwd):
         try:
-            if cherrypy.session['logged']:
-                return "Zalogowano."
+            if bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'Logged as {0}.'.format(cherrypy.session['logged'])})
         except KeyError:
             None
         cursor = self.dbconnection.execute("SELECT * FROM Users")
@@ -51,67 +85,36 @@ class WebApp(object):
                 dbpass = row[1]
                 break
         if not userExists:
-            return "Nie ma takiego uzytkownika w bazie danych!"
+            return json.dumps({'status': 'Failed - user not exists in DB.'})
         hash = hashlib.md5(hashadd + passwd).hexdigest()
         if hash != dbpass:
-            return "Nieprawidlowe haslo!"
-        cherrypy.session['logged'] = True
-        return "Zalogowano."
+            return json.dumps({'status': 'Failed - incorrect password.'})
+        cherrypy.session['logged'] = name
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def logout(self):
-        cherrypy.session['logged'] = False
-        return "Wylogowano."
-
-    @cherrypy.expose
-    def list_vms(self):
-        return "WSTAW TU"
-
-    @cherrypy.expose
-    def new_machine(self, distribution, name):
-        return "Ok."
-
-    @cherrypy.expose
-    def start_vm(self, machine_name=''):
-        return { "status": "Ok" }
-
-    @cherrypy.expose
-    def state(self):
-        return { "name": "ssss", "cpu": "cccc", "state": "ssss" }
-
-    @cherrypy.expose
-    def execute(self, cmd=''):
-        return "EEEE"
-
-    @cherrypy.expose
-    def screenshot(self):
-        return { 'fname': '/static/screenshot.png' }
-
-    @cherrypy.expose
-    def terminal(self):
-        return { 'msg': '' }
-
-
-class RestAPI(object):
-    def __init__(self):
-        self.vbox = virtualbox.VirtualBox()
+        cherrypy.session['logged'] = ''
+        return json.dumps({'status': 'Ok.'})
 
     @cherrypy.expose
     def index(self):
         return "API"
 
     @cherrypy.expose
-    def json_test(self):
-        return json.dumps({ "pole1": "ok", "pole2": "ok2" })
-
-    @cherrypy.expose
     def start_vm(self, machine_name=''):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         if machine_name == '':
             return json.dumps({"status": "Invalid machine name"})
         try:
             cherrypy.session['machine'] = self.vbox.find_machine(machine_name)
             cherrypy.session['session'] = virtualbox.Session()
-            cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'], 'gui', '')
+            cherrypy.session['progress'] = cherrypy.session['machine'].launch_vm_process(cherrypy.session['session'],
+                                                                                         'gui', '')
             while not str(cherrypy.session['session'].state) == "Locked":
                 continue
         except Exception:
@@ -120,6 +123,11 @@ class RestAPI(object):
 
     @cherrypy.expose
     def screenshot(self):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         h, w, _, _, _, _ = cherrypy.session['session'].console.display.get_screen_resolution(0)
         png = cherrypy.session['session'].console.display.take_screen_shot_to_array(0, h, w,
                                                                                     virtualbox.library.BitmapFormat.png)
@@ -129,6 +137,11 @@ class RestAPI(object):
 
     @cherrypy.expose
     def execute(self, cmd=''):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         gsession = cherrypy.session['session'].console.guest.create_session('root', 'centos')
         cmds2 = []
         cmds2.append("-c")
@@ -139,6 +152,11 @@ class RestAPI(object):
 
     @cherrypy.expose
     def list_vms(self):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         ret = ""
         for vm in self.vbox.machines:
             ret += vm.name + ";"
@@ -146,12 +164,22 @@ class RestAPI(object):
 
     @cherrypy.expose
     def state(self):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         machine = cherrypy.session['machine']
         session = cherrypy.session['session']
         return {"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)}
 
     @cherrypy.expose
     def new_machine(self, distribution, name):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         try:
             new_machine = self.vbox.create_machine('', name, [], "Linux", '')
             src_machine = self.vbox.find_machine(distribution)
@@ -163,6 +191,11 @@ class RestAPI(object):
 
     @cherrypy.expose
     def shutdown_vm(self, name):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         sess = None
         try:
             sess = cherrypy.session['session']
@@ -176,6 +209,11 @@ class RestAPI(object):
 
     @cherrypy.expose
     def delete_machine(self, name):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            None
         machine = None
         for m in self.vbox.machines:
             if m.name == name:
@@ -196,9 +234,11 @@ if __name__ == '__main__':
 
     from jinja2 import Environment, FileSystemLoader
     from plugins.jinja2plugin import Jinja2TemplatePlugin
+
     env = Environment(loader=FileSystemLoader('.'))
     Jinja2TemplatePlugin(cherrypy.engine, env=env).subscribe()
     from tools.jinja2tool import Jinja2Tool
+
     cherrypy.tools.template = Jinja2Tool()
     conf2 = {'/': {'tools.template.on': True,
                    'tools.sessions.on': True,
