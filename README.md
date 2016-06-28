@@ -27,6 +27,7 @@ Każdy z użytkowników ma na głównym serwerze grupę maszyn nazwane ich nicka
 Użyte technologie:
 
 * [Python] - najlepszy skryptowy język programowania
+* [pyvbox] - jedyna biblioteka do API VirtualBoxa dla Pythona
 * [CherryPy] - doskonały framework do budowania aplikacji webowych
 * [Bootstrap] - zestaw przydatnych narzędzi ułatwiających tworzenie interfejsu graficznego stron oraz aplikacji internetowych
 * [jQuery] - doskonale znana biblioteka

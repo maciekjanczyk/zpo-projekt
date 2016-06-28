@@ -232,7 +232,18 @@ class RestAPI(object):
         kv = self.return_mach_sess_by_name(cherrypy.session['logged'], name)
         machine = kv['machine']
         session = kv['session']
-        return json.dumps({"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)})
+        adapters = []
+        try:
+            for i in range(0, 10, 1):
+                adapters.append(machine.get_network_adapter(i))
+        except Exception:
+            None
+        macs = ""
+        for a in adapters:
+            macs += "<p style=\"font-size: 70%\"><i>" + a.mac_address + "</i></p>"
+        return json.dumps(
+            {"os": str(machine.os_type_id), "cpu": str(machine.get_cpu_status(0)), "mem": str(machine.memory_size),
+             "macs": str(macs), "vram": str(machine.vram_size), "state": str(session.state)})
 
     @cherrypy.expose
     def new_machine(self, distribution, name):

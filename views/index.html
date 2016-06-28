@@ -210,10 +210,22 @@ new Ajax.Request('/api/state', {
             cos_zle = true;
         }
         if (k === "cpu" ) {
-            document.getElementById("cialo_kategorii2").innerHTML += "<p>Cpu: " + v + "</p>";
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">Cpu:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
         }
         if (k === "state" ) {
-            document.getElementById("cialo_kategorii2").innerHTML += "<p>State: " + v + "</p>";
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">Stan:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
+        }
+        if (k === "os" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">OS:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
+        }
+        if (k === "mem" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">Pamiec:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
+        }
+        if (k === "vram" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">Video RAM:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
+        }
+        if (k === "macs" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<b><p style=\"font-size: 70%\">Adresy MAC:</p></b><p style=\"font-size: 70%\"><i>" + v + "</i></p>";
         }
     });
   }
