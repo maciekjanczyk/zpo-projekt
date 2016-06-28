@@ -5,6 +5,7 @@ import json
 import sqlite3
 import hashlib
 import datetime
+import time
 from subprocess import call
 
 hashadd = "HAAASH"
@@ -172,6 +173,27 @@ class RestAPI(object):
         fname = 'screenshot-{0}-{1}-{2}.png'.format(name, cherrypy.session['logged'],datetime.datetime.now().strftime("%Y%m-d_%H%M"))
         with open('./public/{0}'.format(fname), 'wb') as f:
             f.write(png)
+        return json.dumps({'furl': '/static/{0}'.format(fname)})
+
+    @cherrypy.expose
+    def videocap(self, name, time_s):
+        try:
+            if not bool(cherrypy.session['logged']):
+                return json.dumps({'status': 'You are not logged in.'})
+        except KeyError:
+            return json.dumps({'status': 'You are not logged in.'})
+        session = self.return_session_by_name(cherrypy.session['logged'], name)
+        if session == None:
+            return json.dumps({'furl': '', 'status': 'Failure - invalid machine name.'})
+        fname = 'videocap-{0}-{1}-{2}.webm'.format(name, cherrypy.session['logged'],
+                                                    datetime.datetime.now().strftime("%Y%m-d_%H%M"))
+        try:
+            session.machine.video_capture_file = os.path.abspath("./public/{0}".format(fname))
+            session.machine.video_capture_enabled = True
+            time.sleep(int(time_s))
+            session.machine.video_capture_enabled = False
+        except Exception:
+            return json.dumps({'status': 'Failure: graphics drivers not ready yet.'})
         return json.dumps({'furl': '/static/{0}'.format(fname)})
 
     @cherrypy.expose
