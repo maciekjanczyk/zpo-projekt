@@ -251,15 +251,16 @@ class RestAPI(object):
         return json.dumps({'list': ret})
 
     @cherrypy.expose
-    def state(self):
+    def state(self, name):
         try:
             if not bool(cherrypy.session['logged']):
                 return json.dumps({'status': 'You are not logged in.'})
         except KeyError:
             return json.dumps({'status': 'You are not logged in.'})
-        machine = cherrypy.session['machine']
-        session = cherrypy.session['session']
-        return {"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)}
+        kv = self.return_mach_sess_by_name(cherrypy.session['logged'], name)
+        machine = kv['machine']
+        session = kv['session']
+        return json.dumps({"name": str(machine.name), "cpu": str(machine.get_cpu_status(0)), "state": str(session.state)})
 
     @cherrypy.expose
     def new_machine(self, distribution, name):

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Bootstrap Example</title>
+  <title>VirtManager</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/bootstrap.min.css">
@@ -28,13 +28,18 @@ new Ajax.Request('/api/list_vms', {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "list") {
             document.getElementById("nazwa_kategorii").innerHTML = "Twoje maszyny";
-            document.getElementById("cialo_kategorii").innerHTML = "";
+            document.getElementById("cialo_kategorii").innerHTML = "<p>Wybierz maszyne i czynnosc do wykonania:</p>";
             arr = v.split(";");
+            lista = "<select id=\"maszyna\">";
             for(var i=0;i<arr.length;i++) {
                 if (arr[i] === "")
                     break;
-                document.getElementById("cialo_kategorii").innerHTML += "<p>" + arr[i] + "</p>";
+                lista += "<option>" + arr[i] + "</option>";
             }
+            lista += "</select>";
+            document.getElementById("cialo_kategorii").innerHTML += lista + "<p></p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a href=\"#\" onclick=\"start_vm()\"><p>Uruchom</p></a>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a href=\"#\" onclick=\"change_name()\"><p>Zmien nazwe</p></a>";
         }
     });
   }
@@ -47,14 +52,19 @@ new Ajax.Request('/api/list_working_vms', {
   onSuccess: function(transport) {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "list") {
-            document.getElementById("nazwa_kategorii").innerHTML = "Pracujace maszyny";
-            document.getElementById("cialo_kategorii").innerHTML = "";
+            document.getElementById("nazwa_kategorii").innerHTML = "Twoje maszyny";
+            document.getElementById("cialo_kategorii").innerHTML = "<p>Wybierz maszyne i czynnosc do wykonania:</p>";
             arr = v.split(";");
+            lista = "<select id=\"maszyna\">";
             for(var i=0;i<arr.length;i++) {
                 if (arr[i] === "")
                     break;
-                document.getElementById("cialo_kategorii").innerHTML += "<p>" + arr[i] + "</p>";
+                lista += "<option>" + arr[i] + "</option>";
             }
+            lista += "</select>";
+            document.getElementById("cialo_kategorii").innerHTML += lista + "<p></p>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"shutdown_vm()\" href=\"#\"><p>Wylacz</p></a>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"show_status()\" href=\"#\"><p>Wyswietl status</p></a>";
         }
     });
   }
@@ -112,6 +122,25 @@ new Ajax.Request('/api/new_machine', {
 });
 }
 
+function start_vm () {
+var e = document.getElementById("maszyna");
+var nazwa = e.options[e.selectedIndex].text;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status - start maszyny";
+var ptrwa = "Proces trwa...";
+document.getElementById("cialo_kategorii2").innerHTML = "Proces trwa...";
+new Ajax.Request('/api/start_vm', {
+  method: 'get',
+  parameters: {machine_name: nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+        }
+    });
+  }
+});
+}
+
 function del_machine() {
 new Ajax.Request('/api/list_vms', {
   method:'get',
@@ -152,6 +181,53 @@ new Ajax.Request('/api/delete_machine', {
         }
         else if (document.getElementById("cialo_kategorii2").innerHTML === ptrwa) {
             document.getElementById("cialo_kategorii2").innerHTML = "Ok. Sprawdz menu \"Twoje maszyny\"";
+        }
+    });
+  }
+});
+}
+
+function show_status () {
+var cos_zle = false;
+var e = document.getElementById("maszyna");
+var nazwa = e.options[e.selectedIndex].text;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status maszyny";
+document.getElementById("cialo_kategorii2").innerHTML = "";
+new Ajax.Request('/api/state', {
+  method: 'get',
+  parameters: {name: nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (cos_zle)
+            return;
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+            cos_zle = true;
+        }
+        if (k === "cpu" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<p>Cpu: " + v + "</p>";
+        }
+        if (k === "state" ) {
+            document.getElementById("cialo_kategorii2").innerHTML += "<p>State: " + v + "</p>";
+        }
+    });
+  }
+});
+}
+
+function shutdown_vm () {
+var e = document.getElementById("maszyna");
+var nazwa = e.options[e.selectedIndex].text;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status maszyny";
+document.getElementById("cialo_kategorii2").innerHTML = "";
+new Ajax.Request('/api/shutdown_vm', {
+  method: 'get',
+  parameters: {name: nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+            cos_zle = true;
         }
     });
   }
