@@ -38,34 +38,6 @@ class WebApp(object):
     def login(self):
         return {'msg': "Witam!"}
 
-    @cherrypy.expose
-    def list_vms(self):
-        return "WSTAW TU"
-
-    @cherrypy.expose
-    def new_machine(self, distribution, name):
-        return "Ok."
-
-    @cherrypy.expose
-    def start_vm(self, machine_name=''):
-        return {"status": "Ok"}
-
-    @cherrypy.expose
-    def state(self):
-        return {"name": "ssss", "cpu": "cccc", "state": "ssss"}
-
-    @cherrypy.expose
-    def execute(self, cmd=''):
-        return "EEEE"
-
-    @cherrypy.expose
-    def screenshot(self):
-        return {'fname': '/static/screenshot.png'}
-
-    @cherrypy.expose
-    def terminal(self):
-        return {'msg': ''}
-
 
 class RestAPI(object):
     def __init__(self):
@@ -371,21 +343,6 @@ if __name__ == '__main__':
                    'tools.encode.on': False},
              '/static': {'tools.staticdir.on': True,
                          'tools.staticdir.dir': './public'},
-             '/execute': {'tools.template.on': True,
-                          'tools.template.template': 'views/execute.html',
-                          'tools.encode.on': False},
-             '/state': {'tools.template.on': True,
-                        'tools.template.template': 'views/state.html',
-                        'tools.encode.on': False},
-             '/screenshot': {'tools.template.on': True,
-                             'tools.template.template': 'views/screenshot.html',
-                             'tools.encode.on': False},
-             '/terminal': {'tools.template.on': True,
-                           'tools.template.template': 'views/terminal.html',
-                           'tools.encode.on': False},
-             '/start_vm': {'tools.template.on': True,
-                           'tools.template.template': 'views/start_vm.html',
-                           'tools.encode.on': False},
              '/login': {'tools.template.on': True,
                         'tools.template.template': 'views/login.html',
                         'tools.encode.on': False}}

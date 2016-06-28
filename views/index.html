@@ -41,7 +41,7 @@ new Ajax.Request('/api/list_vms', {
             lista += "</select>";
             document.getElementById("cialo_kategorii").innerHTML += lista + "<p></p>";
             document.getElementById("cialo_kategorii").innerHTML += "<a href=\"#\" onclick=\"start_vm()\"><p>Uruchom</p></a>";
-            document.getElementById("cialo_kategorii").innerHTML += "<a href=\"#\" onclick=\"change_name()\"><p>Zmien nazwe</p></a>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a href=\"#\" data-toggle=\"modal\" data-target=\"#myModal4\"><p>Zmien nazwe</p></a>";
         }
     });
   }
@@ -291,6 +291,26 @@ function refresh_img () {
     var link = document.getElementById("obrazeczek").src;
     document.getElementById("obrazek").innerHTML = "<img id=\"obrazeczek\" class=\"img-thumbnail\" src=\"" + link + "\">";
 }
+
+function rename_machine () {
+var e = document.getElementById("maszyna");
+var stara_nazwa = e.options[e.selectedIndex].text;
+var nowa_nazwa = document.getElementById("nowa_nazwa").value;
+document.getElementById("nazwa_kategorii2").innerHTML = "Status - zmiana nazwy maszyny";
+document.getElementById("cialo_kategorii2").innerHTML = "Proces trwa...";
+new Ajax.Request('/api/rename_machine', {
+  method: 'get',
+  parameters: {old_name: stara_nazwa, new_name: nowa_nazwa},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "status") {
+            document.getElementById("cialo_kategorii2").innerHTML = v;
+            my_machines();
+        }
+    });
+  }
+});
+}
 </script>
 
 <div class="container">
@@ -427,6 +447,27 @@ function refresh_img () {
       <div class="modal-body">
           <p>Ile sekund nagrania?: <input type="text" id="sekundy"/></p>
           <p><input type="button" data-dismiss="modal" value="Nagrywaj" onclick="video_cap()"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="myModal4" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Zmiana nazwy maszyny</h4>
+      </div>
+      <div class="modal-body">
+          <p>Wpisz nowa nazwe: <input type="text" id="nowa_nazwa"/></p>
+          <p><input type="button" data-dismiss="modal" value="Zmien nazwe" onclick="rename_machine()"></p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
