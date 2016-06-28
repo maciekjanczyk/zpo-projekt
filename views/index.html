@@ -1,10 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>VBM Manager v0.1</title>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <script src="/static/jquery.js"></script>
+  <script src="/static/prototype.js"></script>
+  <script src="/static/bootstrap.min.js"></script>
 </head>
 <body>
-{{msg}}
+
+<script>
+function logout () {
+new Ajax.Request('/api/logout', {
+  method:'get',
+  onSuccess: function(transport) {
+    window.location.replace("/");
+  }
+});
+}
+
+function my_machines() {
+new Ajax.Request('/api/list_vms', {
+  method:'get',
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "list") {
+            document.getElementById("nazwa_kategorii").innerHTML = "Twoje maszyny";
+            document.getElementById("cialo_kategorii").innerHTML = "";
+            arr = v.split(";");
+            for(var i=0;i<arr.length;i++) {
+                if (arr[i] === "")
+                    break;
+                document.getElementById("cialo_kategorii").innerHTML += "<p>" + arr[i] + "</p>";
+            }
+        }
+    });
+  }
+});
+}
+
+function working_machines() {
+new Ajax.Request('/api/list_working_vms', {
+  method:'get',
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "list") {
+            document.getElementById("nazwa_kategorii").innerHTML = "Pracujace maszyny";
+            document.getElementById("cialo_kategorii").innerHTML = "";
+            arr = v.split(";");
+            for(var i=0;i<arr.length;i++) {
+                if (arr[i] === "")
+                    break;
+                document.getElementById("cialo_kategorii").innerHTML += "<p>" + arr[i] + "</p>";
+            }
+        }
+    });
+  }
+});
+}
+</script>
+
+<div class="container">
+  <div class="jumbotron">
+    <h1>VirtManager</h1>
+    <p>Zarzadca maszyn wirtualnych</p>
+  </div>
+  <div class="row">
+    <div class="col-sm-4">
+      <h3>Menu</h3>
+      <a href="#" onclick="my_machines()"><p>Twoje maszyny</p></a>
+      <a href="#" onclick="working_machines()"><p>Pracujace maszyny</p></a>
+      <p>Dodaj nowa maszyne</p>
+      <p>Usun maszyne</p>
+      <a href="" onclick="logout()"><p>Wyloguj</p></a>
+    </div>
+    <div class="col-sm-4">
+      <h3 id="nazwa_kategorii"></h3>
+      <div id="cialo_kategorii"></div>
+    </div>
+    <div class="col-sm-4">
+      <h3 id="nazwa_kategorii2"></h3>
+      <div id="cialo_kategorii2"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
+

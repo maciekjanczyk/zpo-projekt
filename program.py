@@ -1,4 +1,6 @@
 import cherrypy
+import requests
+import mimetypes
 import virtualbox
 import os
 import json
@@ -25,6 +27,15 @@ class WebApp(object):
 
     @cherrypy.expose
     def index(self):
+        try:
+            if not bool(cherrypy.session['logged']):
+                raise cherrypy.HTTPRedirect("/login")
+        except KeyError:
+            raise cherrypy.HTTPRedirect("/login")
+        return {'msg': "Witam!"}
+
+    @cherrypy.expose
+    def login(self):
         return {'msg': "Witam!"}
 
     @cherrypy.expose
@@ -170,7 +181,7 @@ class RestAPI(object):
             return json.dumps({'furl': '', 'status': 'Failure - invalid machine name.'})
         h, w, _, _, _, _ = sess.console.display.get_screen_resolution(0)
         png = sess.console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.png)
-        fname = 'screenshot-{0}-{1}-{2}.png'.format(name, cherrypy.session['logged'],datetime.datetime.now().strftime("%Y%m-d_%H%M"))
+        fname = 'screenshot-{0}-{1}.png'.format(name, cherrypy.session['logged'])
         with open('./public/{0}'.format(fname), 'wb') as f:
             f.write(png)
         return json.dumps({'furl': '/static/{0}'.format(fname)})
@@ -185,8 +196,7 @@ class RestAPI(object):
         session = self.return_session_by_name(cherrypy.session['logged'], name)
         if session == None:
             return json.dumps({'furl': '', 'status': 'Failure - invalid machine name.'})
-        fname = 'videocap-{0}-{1}-{2}.webm'.format(name, cherrypy.session['logged'],
-                                                    datetime.datetime.now().strftime("%Y%m-d_%H%M"))
+        fname = 'videocap-{0}-{1}.webm'.format(name, cherrypy.session['logged'])
         try:
             session.machine.video_capture_file = os.path.abspath("./public/{0}".format(fname))
             session.machine.video_capture_enabled = True
@@ -366,5 +376,9 @@ if __name__ == '__main__':
                            'tools.encode.on': False},
              '/start_vm': {'tools.template.on': True,
                            'tools.template.template': 'views/start_vm.html',
-                           'tools.encode.on': False}}
+                           'tools.encode.on': False},
+             '/login': {'tools.template.on': True,
+                        'tools.template.template': 'views/login.html',
+                        'tools.encode.on': False}}
+
     cherrypy.quickstart(WebApp(), '', conf2)

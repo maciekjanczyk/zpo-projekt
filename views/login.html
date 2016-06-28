@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <script src="/static/jquery.js"></script>
+  <script src="/static/prototype.js"></script>
+  <script src="/static/bootstrap.min.js"></script>
+</head>
+<body>
+
+<script>
+function login() {
+var login = document.getElementById('login').value;
+var pass = document.getElementById('pass').value;
+new Ajax.Request('/api/login', {
+  method: 'post',
+  parameters: {name: login, passwd: pass},
+  onSuccess: function(transport, json){
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k !== "status" )
+            return;
+        if (v === "Ok." )
+        {
+            window.location.replace("/");
+        }
+        else
+        {
+            document.getElementById("blad").innerHTML = v;
+        }
+    });
+  }
+});
+}
+</script>
+
+<div class="container">
+  <div class="jumbotron">
+    <h1>VirtManager</h1>
+    <p>Zarzadca maszyn wirtualnych</p>
+  </div>
+  <div class="row">
+    <div class="col-sm-4">
+      <h3>Zaloguj sie</h3>
+      <p>Login: <input type="text" id="login"/></p>
+      <p>Password: <input type="password" id="pass"/></p>
+      <p><input type="button" value="Zaloguj" onclick="login()"></p>
+      <p><div id="blad"></div></p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+
