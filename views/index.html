@@ -54,7 +54,7 @@ new Ajax.Request('/api/list_working_vms', {
   onSuccess: function(transport) {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "list") {
-            document.getElementById("nazwa_kategorii").innerHTML = "Twoje maszyny";
+            document.getElementById("nazwa_kategorii").innerHTML = "Dziajace maszyny";
             document.getElementById("cialo_kategorii").innerHTML = "<p>Wybierz maszyne i czynnosc do wykonania:</p>";
             arr = v.split(";");
             lista = "<select id=\"maszyna\">";
@@ -69,6 +69,7 @@ new Ajax.Request('/api/list_working_vms', {
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"show_status()\" href=\"#\"><p>Wyswietl status</p></a>";
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"screenshot()\" href=\"#\"><p>Pokaz zrzut ekranu</p></a>";
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"terminal()\" data-toggle=\"modal\" data-target=\"#myModal\" href=\"#\"><p>Otworz terminal</p></a>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a data-toggle=\"modal\" data-target=\"#myModal3\" href=\"#\"><p>Zrzut wideo</p></a>";
         }
     });
   }
@@ -231,7 +232,7 @@ new Ajax.Request('/api/shutdown_vm', {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "status") {
             document.getElementById("cialo_kategorii2").innerHTML = v;
-            cos_zle = true;
+            working_machines();
         }
     });
   }
@@ -249,7 +250,7 @@ new Ajax.Request('/api/screenshot', {
   onSuccess: function(transport) {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "furl") {
-            document.getElementById("cialo_kategorii2").innerHTML = "<img class=\"img-thumbnail\" src=\"" + v + "\">";
+            document.getElementById("cialo_kategorii2").innerHTML = "<a onclick=\"refresh_img()\" href=\"#\" data-toggle=\"modal\" data-target=\"#myModal2\"><img id=\"obrazeczek\" class=\"img-thumbnail\" src=\"" + v + "\"></a>";
             cos_zle = true;
         }
     });
@@ -257,7 +258,38 @@ new Ajax.Request('/api/screenshot', {
 });
 }
 
+function refresh_vid (source) {
+    document.getElementById("obrazek").innerHTML = "<video autoplay loop class=\"embed-responsive-item\"><source src=\"" + source + "\" type=\"video/mp4\"></video>";
+}
+
+function video_cap () {
+var e = document.getElementById("maszyna");
+var nazwa = e.options[e.selectedIndex].text;
+var sekundy = document.getElementById("sekundy").value;
+document.getElementById("nazwa_kategorii2").innerHTML = "Zrzut ekranu";
+document.getElementById("cialo_kategorii2").innerHTML = "Czekaj...";
+new Ajax.Request('/api/videocap', {
+  method: 'get',
+  parameters: {name: nazwa, time_s: sekundy},
+  onSuccess: function(transport) {
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k === "furl") {
+            sklad = "<a onclick=\"refresh_vid(\'";
+            sklad += v;
+            sklad += "\')\" href=\"#\" data-toggle=\"modal\" data-target=\"#myModal2\">Wyswietl film</a>";
+            document.getElementById("cialo_kategorii2").innerHTML = sklad;
+        }
+    });
+  }
+});
+}
+
 function terminal () {
+}
+
+function refresh_img () {
+    var link = document.getElementById("obrazeczek").src;
+    document.getElementById("obrazek").innerHTML = "<img id=\"obrazeczek\" class=\"img-thumbnail\" src=\"" + link + "\">";
 }
 </script>
 
@@ -353,6 +385,48 @@ function terminal () {
       </div>
       <div class="modal-body">
           <div id="term_demo"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="myModal2" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Screenshot</h4>
+      </div>
+      <div class="modal-body">
+          <!--<div id="obrazek"></div>-->
+          <div align="center" id="obrazek" class="embed-responsive embed-responsive-16by9"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="myModal3" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Nagrywanie</h4>
+      </div>
+      <div class="modal-body">
+          <p>Ile sekund nagrania?: <input type="text" id="sekundy"/></p>
+          <p><input type="button" data-dismiss="modal" value="Nagrywaj" onclick="video_cap()"></p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

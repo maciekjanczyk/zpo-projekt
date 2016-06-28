@@ -34,6 +34,35 @@ new Ajax.Request('/api/login', {
   }
 });
 }
+
+function register() {
+var login = document.getElementById('login2').value;
+var pass = document.getElementById('pass2').value;
+var pass2 = document.getElementById('pass21').value;
+if (pass !== pass2) {
+    document.getElementById("blad2").innerHTML = "<p>Hasla sie nie zgadzaja!</p>";
+    return;
+}
+
+new Ajax.Request('/api/new_user', {
+  method: 'post',
+  parameters: {name: login, passwd: pass},
+  onSuccess: function(transport, json){
+    JSON.parse(transport.responseText, function (k,v) {
+        if (k !== "status" )
+            return;
+        if (v === "Ok." )
+        {
+            document.getElementById("blad2").innerHTML = "<p>Pomyslnie zarejestrowano!</p>";
+        }
+        else
+        {
+            document.getElementById("blad2").innerHTML = v;
+        }
+    });
+  }
+});
+}
 </script>
 
 <div class="container">
@@ -48,7 +77,32 @@ new Ajax.Request('/api/login', {
       <p>Password: <input type="password" id="pass"/></p>
       <p><input type="button" value="Zaloguj" onclick="login()"></p>
       <p><div id="blad"></div></p>
+      <p><a href="#" data-toggle="modal" data-target="#myModal">Zarejestruj nowego uzytkownika</a></p>
     </div>
+  </div>
+</div>
+
+<div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Nowy uzytkownik</h4>
+      </div>
+      <div class="modal-body">
+          <p>Login: <input type="text" id="login2"/></p>
+          <p>Haslo: <input type="password" id="pass2"/></p>
+          <p>Powtorz haslo: <input type="password" id="pass21"/></p>
+          <p><input type="button" value="Zarejestruj" onclick="register()"></p>
+          <p><div id="blad2"></div></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
