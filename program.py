@@ -119,6 +119,8 @@ class RestAPI(object):
             self.machines[cherrypy.session['logged']] = []
         try:
             machine = self.vbox.find_machine(machine_name)
+            if not ('/' + cherrypy.session['logged']) in machine.groups:
+                return json.dumps({"status": "Invalid machine name"})
             session = virtualbox.Session()
             self.machines[cherrypy.session['logged']].append({'machine': machine, 'session': session})
             cherrypy.session['progress'] = machine.launch_vm_process(session, 'gui', '')
@@ -196,7 +198,8 @@ class RestAPI(object):
             return json.dumps({'status': 'You are not logged in.'})
         ret = ""
         for vm in self.vbox.machines:
-            ret += vm.name + ";"
+            if ('/' + cherrypy.session['logged']) in vm.groups:
+                ret += vm.name + ";"
         return json.dumps({'list': ret})
 
     @cherrypy.expose
@@ -273,7 +276,7 @@ class RestAPI(object):
             return json.dumps({'status': 'You are not logged in.'})
         machine = None
         for m in self.vbox.machines:
-            if m.name == name:
+            if m.name == name and ('/'+cherrypy.session['logged']) in m.groups:
                 machine = m
                 break
         try:
