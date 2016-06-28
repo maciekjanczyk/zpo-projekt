@@ -4,8 +4,8 @@ import os
 import json
 import sqlite3
 import hashlib
+import datetime
 from subprocess import call
-
 
 hashadd = "HAAASH"
 
@@ -169,9 +169,10 @@ class RestAPI(object):
             return json.dumps({'furl': '', 'status': 'Failure - invalid machine name.'})
         h, w, _, _, _, _ = sess.console.display.get_screen_resolution(0)
         png = sess.console.display.take_screen_shot_to_array(0, h, w, virtualbox.library.BitmapFormat.png)
-        with open('./public/screenshot.png', 'wb') as f:
+        fname = 'screenshot-{0}-{1}-{2}.png'.format(name, cherrypy.session['logged'],datetime.datetime.now().strftime("%Y%m-d_%H%M"))
+        with open('./public/{0}'.format(fname), 'wb') as f:
             f.write(png)
-        return json.dumps({'furl': '/static/screenshot.png'})
+        return json.dumps({'furl': '/static/{0}'.format(fname)})
 
     @cherrypy.expose
     def execute(self, name, cmd=''):
@@ -277,7 +278,7 @@ class RestAPI(object):
             return json.dumps({'status': 'You are not logged in.'})
         machine = None
         for m in self.vbox.machines:
-            if m.name == name and ('/'+cherrypy.session['logged']) in m.groups:
+            if m.name == name and ('/' + cherrypy.session['logged']) in m.groups:
                 machine = m
                 break
         try:
