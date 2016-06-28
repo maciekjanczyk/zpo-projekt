@@ -5,7 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <link href="static/terminal-style.css" rel="stylesheet" type="text/css">
   <script src="/static/jquery.js"></script>
+  <script src="static/jquery-terminal.js"></script>
   <script src="/static/prototype.js"></script>
   <script src="/static/bootstrap.min.js"></script>
 </head>
@@ -66,7 +68,7 @@ new Ajax.Request('/api/list_working_vms', {
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"shutdown_vm()\" href=\"#\"><p>Wylacz</p></a>";
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"show_status()\" href=\"#\"><p>Wyswietl status</p></a>";
             document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"screenshot()\" href=\"#\"><p>Pokaz zrzut ekranu</p></a>";
-            document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"terminal()\" href=\"#\"><p>Otworz terminal</p></a>";
+            document.getElementById("cialo_kategorii").innerHTML += "<a onclick=\"terminal()\" data-toggle=\"modal\" data-target=\"#myModal\" href=\"#\"><p>Otworz terminal</p></a>";
         }
     });
   }
@@ -254,6 +256,9 @@ new Ajax.Request('/api/screenshot', {
   }
 });
 }
+
+function terminal () {
+}
 </script>
 
 <div class="container">
@@ -278,6 +283,82 @@ new Ajax.Request('/api/screenshot', {
       <h3 id="nazwa_kategorii2"></h3>
       <div id="cialo_kategorii2"></div>
     </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<script>
+ var GLOBAL_TERMINAL = 0;
+ function get_response(response) {
+    var out = "";
+    JSON.parse(response.responseText, function (k,v) {
+        if (k === "out" )
+        {
+            out = v;
+            return v;
+        }
+    });
+    var err = "";
+    JSON.parse(response.responseText, function (k,v) {
+        if (k === "err" ) {
+            err = v;
+            return v;
+        }
+    });
+    GLOBAL_TERMINAL.echo(new String(out));
+ }
+
+ jQuery(function($, undefined) {
+    $('#term_demo').terminal(function(command, term) {
+        GLOBAL_TERMINAL = term;
+        if (command !== '') {
+            try {
+                /*var result = window.eval(command);
+                if (result !== undefined) {
+                    term.echo(new String(result));
+                }*/
+                var url = '/api/execute';
+                //var param = 'cmd='+command;
+                var e = document.getElementById("maszyna");
+                var nazwa = e.options[e.selectedIndex].text;
+                var myAjax = new Ajax.Request(
+					url,
+					{
+						method: 'get',
+						parameters: {name: nazwa, cmd: command},
+						onComplete: get_response
+					});
+            } catch(e) {
+                term.error(new String(e));
+            }
+        } else {
+           term.echo('');
+        }
+    }, {
+        greetings: 'Bash',
+        name: 'js_demo',
+        height: window.innerHeight - 130,
+        prompt: 'bash-4.1$ '
+    });
+});
+</script>
+<div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Terminal</h4>
+      </div>
+      <div class="modal-body">
+          <div id="term_demo"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
