@@ -1,12 +1,10 @@
+import thread
 import cherrypy
-import requests
-import mimetypes
 import virtualbox
 import os
 import json
 import sqlite3
 import hashlib
-import datetime
 import time
 from subprocess import call
 
@@ -253,14 +251,16 @@ class RestAPI(object):
         except KeyError:
             return json.dumps({'status': 'You are not logged in.'})
         try:
-            new_machine = self.vbox.create_machine(settings_file='', name=name, groups=[], os_type_id="Linux",
-                                                   flags='')
-            src_machine = self.vbox.find_machine(distribution)
-            src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
-            self.vbox.register_machine(new_machine)
-            ch_gr_cmd = ["C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe", "modifyvm", name, "--groups",
-                         '/' + cherrypy.session['logged']]
-            a = call(ch_gr_cmd, shell=True)
+            def newinstall(login_uz):
+                new_machine = self.vbox.create_machine(settings_file='', name=name, groups=[], os_type_id="Linux",
+                                                       flags='')
+                src_machine = self.vbox.find_machine(distribution)
+                src_machine.clone_to(new_machine, virtualbox.library.CloneMode(1), [])
+                self.vbox.register_machine(new_machine)
+                ch_gr_cmd = ["C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe", "modifyvm", name, "--groups",
+                             '/' + login_uz]
+                a = call(ch_gr_cmd, shell=True)
+            thread.start_new_thread(newinstall, [cherrypy.session['logged']])
         except Exception:
             return json.dumps({'status': 'Failure.'})
         except cherrypy.TimeoutError:

@@ -110,17 +110,17 @@ var distro = e.options[e.selectedIndex].text;
 var nazwa = document.getElementById("mach_name").value;
 document.getElementById("nazwa_kategorii2").innerHTML = "Status - nowa maszyna";
 var ptrwa = "Proces trwa (czas oczekiwania ok 10 minut!)...";
-document.getElementById("cialo_kategorii2").innerHTML = "Proces trwa (czas oczekiwania ok 10 minut!)...";
+document.getElementById("cialo_kategorii2").innerHTML = "Czekanie na odpowiedz serwera...";
 new Ajax.Request('/api/new_machine', {
   method: 'get',
   parameters: {distribution: distro, name: nazwa},
   onSuccess: function(transport) {
     JSON.parse(transport.responseText, function (k,v) {
-        if (k === "status") {
+        if (k === "status" && v !== "Ok.") {
             document.getElementById("cialo_kategorii2").innerHTML = v;
         }
-        else if (document.getElementById("cialo_kategorii2").innerHTML === ptrwa) {
-            document.getElementById("cialo_kategorii2").innerHTML = "Ok. Sprawdz menu \"Twoje maszyny\"";
+        else if (v === "Ok.") {
+            document.getElementById("cialo_kategorii2").innerHTML = ptrwa;
         }
     });
   }
@@ -183,6 +183,7 @@ new Ajax.Request('/api/delete_machine', {
     JSON.parse(transport.responseText, function (k,v) {
         if (k === "status") {
             document.getElementById("cialo_kategorii2").innerHTML = v;
+            del_machine();
         }
         else if (document.getElementById("cialo_kategorii2").innerHTML === ptrwa) {
             document.getElementById("cialo_kategorii2").innerHTML = "Ok. Sprawdz menu \"Twoje maszyny\"";
